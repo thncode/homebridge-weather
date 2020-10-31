@@ -1,0 +1,51 @@
+{
+  "_from": "homebridge-wetter",
+  "_id": "homebridge-wetter@1.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-YGJDfnkqT4rmWKipin33T7wmnfK1b8Gfcsnn/4APxM/Lu0y8Ub1b0nP63iIXTnwBvBIwtYb4Op1FJMwWhooh8Q==",
+  "_location": "/homebridge-wetter",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "homebridge-wetter",
+    "name": "homebridge-wetter",
+    "escapedName": "homebridge-wetter",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "https://registry.npmjs.org/homebridge-wetter/-/homebridge-wetter-1.0.0.tgz",
+  "_shasum": "e859ece98aa6348e28d7315d80bf87abd9d3b81a",
+  "_spec": "homebridge-wetter",
+  "_where": "/home/pi/homebridge-weather",
+  "author": {
+    "name": "Thomas Nemec"
+  },
+  "bugs": {
+    "url": "https://github.com/thncode/homebridge-weather/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "",
+  "homepage": "https://github.com/thncode/homebridge-weather#readme",
+  "keywords": [
+  	"homebridge",
+  	"homebridge-plugin",
+  	"HomeKit"
+  	],
+  "license": "ISC",
+  "main": "index.js",
+  "name": "homebridge-wetter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thncode/homebridge-weather.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
+}
