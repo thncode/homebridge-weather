@@ -7,6 +7,7 @@ const fs = require('fs');
 const moment = require('moment');
 
 var lastData = "";
+var data = "";
 var success = false;
 
 var temperature;
@@ -40,10 +41,10 @@ module.exports = function (homebridge) {
 function read() {
 	
     request(url, function (error, response, body) {
-		//if (true) { // body.substr(20).localeCompare(lastData)) {
+
+			lastData = data;
+			data = body.substr(20);
 			
-		//	lastData = body.substr(20);
-		
 			var str = body.substr(20, 5);
 			for (i = 0; i < 6; i++)
 				if (str[i] != ' ') break;
@@ -98,12 +99,7 @@ function read() {
 			storm = (body.substr(88, 1) == '1');
 
 			raining = (body.substr(90, 1) == '1');
-			
-			//success = true;
-		//}
 	});	
-
-	//success = false;
 }; 
 
 function Weather(log, config) {
@@ -124,8 +120,14 @@ function Weather(log, config) {
     
     setInterval(function() {
     		read();
-    		that.log("Temperatur: " + temperature + "°C Luftfeuchtigkeit: " + humidity + "% Luftdruck: " + airPressure + "hPa P25: " + p25 + " P10: " + p10 + " Licht: " + light + "lux UV: " + uv + " Regen letzte Stunde: " + rain1h + "mm Regen heute: " + rainToday + "mm Wind: " + avgWind + "km/h Böen: " + maxWind + "km/h Sturm: " + storm + "Regen: " + raining);
-			that.fakeGatoHistoryService.addEntry({time: moment().unix(), temp: temperature, pressure: airPressure, humidity: humidity});
+    		if (data == lastData) // data.localeCompare(lastData))
+    			that.log("unchanged");
+    		else {
+	    		that.log(data);
+    			//that.log("Temperatur: " + temperature + "°C Luftfeuchtigkeit: " + humidity + "% Luftdruck: " + airPressure + "hPa P25: " + p25 + " P10: " + p10 + " Licht: " + light + "lux UV: " + uv + " Regen letzte Stunde: " + rain1h + "mm Regen heute: " + rainToday + "mm Wind: " + avgWind + "km/h Böen: " + maxWind + "km/h Sturm: " + storm + " Regen: " + raining);
+				that.fakeGatoHistoryService.addEntry({time: moment().unix(), temp: temperature, pressure: airPressure, humidity: humidity});
+				that.fakeGatoHistoryService.addEntry({time: moment().unix(), status: storm});
+    			}
 			}, 15000); // 15s
 };
 
