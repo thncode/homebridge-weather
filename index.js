@@ -125,6 +125,7 @@ function Weather(log, config) {
    		if (newData != lastData) {
  			that.log("Temp:" + temperature + "°C LF:" + humidity + "% LD:" + airPressure + "hPa P25:" + p25 + " P10:" + p10 + " Licht:" + light + "lux UV:" + uvLevel + " Regen 1h:" + rain1h + "mm Regen heute:" + rainToday + "mm Wind:" + avgWind + "km/h Böen:" + maxWind + "km/h Sturm:" + storm + " Regen:" + raining);
 			that.fakeGatoHistoryService.addEntry({time: moment().unix(), temp: temperature, pressure: airPressure, humidity: humidity});
+			that.fakeGatoHistoryService.addEntry({time: moment().unix(), motion: storm)};
    			}
 
 		 }, 15000); // 15s
