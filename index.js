@@ -2,13 +2,12 @@ var Service, Characteristic, HomebridgeAPI, UUIDGen, FakeGatoHistoryService;
 var inherits = require('util').inherits;
 var os = require("os");
 var hostname = os.hostname();
-var request = require("request");
 const fs = require('fs');
 const moment = require('moment');
+var http = require('http');
 
 var lastData = "";
-var data = "";
-var success = false;
+var newData = "";
 
 var temperature;
 var tempMin;
@@ -35,72 +34,8 @@ module.exports = function (homebridge) {
     UUIDGen = homebridge.hap.uuid;
     FakeGatoHistoryService = require("fakegato-history")(homebridge);
 
-    homebridge.registerAccessory("homebridge-weather", "Weather", Weather);
+    homebridge.registerAccessory("homebridge-wetter", "Weather", Weather);
 };
-
-function read() {
-	
-    request(url, function (error, response, body) {
-
-			lastData = data;
-			data = body.substr(20);
-			
-			var str = body.substr(20, 5);
-			for (i = 0; i < 6; i++)
-				if (str[i] != ' ') break;
-			if (i) str = str.substr(i);
-			temperature = parseFloat(str);
-			
-			str = body.substr(26, 5);
-			for (i = 0; i < 6; i++)
-				if (str[i] != ' ') break;
-			if (i) str = str.substr(i);
-			tempMin = parseFloat(str);
-			
-			str = body.substr(32, 5);
-			for (i = 0; i < 6; i++)
-				if (str[i] != ' ') break;
-			if (i) str = str.substr(i);
-			tempMax = parseFloat(str);
-			
-			str = body.substr(38, 2);
-			humidity = parseFloat(str);
-	
-			str = body.substr(41, 4);
-			airPressure = parseFloat(str);
-
-			str = body.substr(46, 4);
-			p25 = parseFloat(str);
-			
-			str = body.substr(51, 4);
-			p10 = parseFloat(str);
-
-			str = body.substr(56, 1);
-			airQuality = parseFloat(str);
-
-			str = body.substr(58, 6);
-			light = parseFloat(str);
-
-			str = body.substr(65, 4);
-			uv = parseFloat(str);
-
-			str = body.substr(70, 3);
-			rainToday = parseFloat(str);
-
-			str = body.substr(74, 3);
-			rain1h = parseFloat(str);
-
-			str = body.substr(78, 4);
-			avgWind = parseFloat(str);
-
-			str = body.substr(83, 4);
-			maxWind = parseFloat(str);
-
-			storm = (body.substr(88, 1) == '1');
-
-			raining = (body.substr(90, 1) == '1');
-	});	
-}; 
 
 function Weather(log, config) {
 
@@ -110,25 +45,89 @@ function Weather(log, config) {
     this.displayName = this.name;
     this.deviceId = config.deviceId;
 
-	url = "http://wetterstation/data";
-
     this.config = config;
 
     this.setUpServices();
-    
-    read();
-    
+	    
     setInterval(function() {
-    		read();
-    		if (data == lastData) // data.localeCompare(lastData))
-    			that.log("unchanged");
-    		else {
-	    		that.log(data);
-    			//that.log("Temperatur: " + temperature + "°C Luftfeuchtigkeit: " + humidity + "% Luftdruck: " + airPressure + "hPa P25: " + p25 + " P10: " + p10 + " Licht: " + light + "lux UV: " + uv + " Regen letzte Stunde: " + rain1h + "mm Regen heute: " + rainToday + "mm Wind: " + avgWind + "km/h Böen: " + maxWind + "km/h Sturm: " + storm + " Regen: " + raining);
-				that.fakeGatoHistoryService.addEntry({time: moment().unix(), temp: temperature, pressure: airPressure, humidity: humidity});
-				that.fakeGatoHistoryService.addEntry({time: moment().unix(), status: storm});
-    			}
-			}, 15000); // 15s
+    	var options = {hostname: '192.168.178.104', port: 80, path: '/data', method: 'GET'};
+    	var req = http.request(options, function(res) {
+			res.setEncoding('utf-8');
+			res.on('data', function (body) {
+				lastData = newData;
+				newData = body.substr(20);
+				
+				var str = body.substr(20, 5);
+				for (i = 0; i < 6; i++)
+					if (str[i] != ' ') break;
+				if (i) str = str.substr(i);
+				temperature = parseFloat(str);
+				
+				str = body.substr(26, 5);
+				for (i = 0; i < 6; i++)
+					if (str[i] != ' ') break;
+				if (i) str = str.substr(i);
+				tempMin = parseFloat(str);
+				
+				str = body.substr(32, 5);
+				for (i = 0; i < 6; i++)
+					if (str[i] != ' ') break;
+				if (i) str = str.substr(i);
+				tempMax = parseFloat(str);
+				
+				str = body.substr(38, 3);
+				humidity = parseFloat(str);
+		
+				str = body.substr(42, 4);
+				airPressure = parseFloat(str);
+	
+				str = body.substr(47, 5);
+				p25 = parseFloat(str);
+				
+				str = body.substr(53, 5);
+				p10 = parseFloat(str);
+	
+				str = body.substr(59, 1);
+				airQuality = parseFloat(str);
+	
+				str = body.substr(61, 6);
+				light = parseFloat(str);
+	
+				str = body.substr(68, 6);
+				uvLevel = parseFloat(str);
+	
+				str = body.substr(74, 3);
+				rainToday = parseFloat(str);
+	
+				str = body.substr(78, 3);
+				rain1h = parseFloat(str);
+	
+				str = body.substr(82, 4);
+				avgWind = parseFloat(str);
+	
+				str = body.substr(87, 4);
+				maxWind = parseFloat(str);
+	
+				storm = (body.substr(92, 1) == '1');
+	
+				raining = (body.substr(94, 1) == '1');
+			});
+		});
+		
+		req.on('error', function(err) {
+			that.log("Read error: " + err.message);
+		});
+ 
+		req.end();
+
+   		//that.log(newData);
+
+   		if (newData != lastData) {
+ 			that.log("Temp:" + temperature + "°C LF:" + humidity + "% LD:" + airPressure + "hPa P25:" + p25 + " P10:" + p10 + " Licht:" + light + "lux UV:" + uvLevel + " Regen 1h:" + rain1h + "mm Regen heute:" + rainToday + "mm Wind:" + avgWind + "km/h Böen:" + maxWind + "km/h Sturm:" + storm + " Regen:" + raining);
+			that.fakeGatoHistoryService.addEntry({time: moment().unix(), temp: temperature, pressure: airPressure, humidity: humidity});
+   			}
+
+		 }, 15000); // 15s
 };
 
 Weather.prototype.getFirmwareRevision = function (callback) {
@@ -137,6 +136,10 @@ Weather.prototype.getFirmwareRevision = function (callback) {
 
 Weather.prototype.getCurrentTemperature = function (callback) {
     return callback(null, temperature);
+};
+
+Weather.prototype.getMinTemperature = function (callback) {
+    return callback(null, TempMin);
 };
 
 Weather.prototype.getCurrentHumidity = function (callback) {
@@ -220,7 +223,22 @@ Weather.prototype.setUpServices = function () {
     this.fakeGatoHistoryService = new FakeGatoHistoryService("weather", this, { storage: 'fs' });
 
    	var CustomCharacteristic = {};
-   
+
+    CustomCharacteristic.minTemp = function () {
+		Characteristic.call(this, 'min. Temperature', '707B78CA-51AB-4DC9-8630-80A58F07E419');
+        this.setProps({
+	        format: this.Formats.FLOAT,
+	        unit: this.Units.CELSIUS,
+	        maxValue: 100,
+	        minValue: -40,
+	        minStep: 0.1,
+            perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+        });
+        this.value = this.getDefaultValue();
+    };
+    inherits(CustomCharacteristic.minTemp, Characteristic);
+    CustomCharacteristic.minTemp.UUID = '707B78CA-51AB-4DC9-8630-80A58F07E419';
+
     CustomCharacteristic.AirPressure = function () {
 		Characteristic.call(this, 'Air Pressure', 'E863F10F-079E-48FF-8F27-9C2605A29F52');
         this.setProps({
@@ -310,8 +328,9 @@ Weather.prototype.setUpServices = function () {
         this.setProps({
             format: Characteristic.Formats.FLOAT,
             unit: "km/h",
-            maxValue: 300,
+            maxValue: 100,
             minValue: 0,
+	        minStep: 0.1,
             perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
         });
         this.value = this.getDefaultValue();
@@ -319,6 +338,21 @@ Weather.prototype.setUpServices = function () {
     inherits(CustomCharacteristic.avgWind, Characteristic);
     CustomCharacteristic.avgWind.UUID = '49C8AE5A-A3A5-41AB-BF1F-12D5654F9F41';
 
+    CustomCharacteristic.maxWind = function () {
+		Characteristic.call(this, 'Wind', '6B8861E5-D6F3-425C-83B6-069945FFD1F1');
+        this.setProps({
+            format: Characteristic.Formats.FLOAT,
+            unit: "km/h",
+            maxValue: 100,
+            minValue: 0,
+	        minStep: 0.1,
+            perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY]
+        });
+        this.value = this.getDefaultValue();
+    };
+    inherits(CustomCharacteristic.maxWind, Characteristic);
+    CustomCharacteristic.maxWind.UUID = '6B8861E5-D6F3-425C-83B6-069945FFD1F1';
+    
     CustomCharacteristic.Raining = function () {
 		Characteristic.call(this, 'Regen', 'f14eb1ad-e000-4ef4-a54f-0cf07b2e7be7');
         this.setProps({
@@ -357,6 +391,9 @@ Weather.prototype.setUpServices = function () {
 
     this.tempService.getCharacteristic(CustomCharacteristic.avgWind)
         .on('get', this.getAvgWind.bind(this));
+
+    this.tempService.getCharacteristic(CustomCharacteristic.maxWind)
+        .on('get', this.getMaxWind.bind(this));
 
     this.tempService.getCharacteristic(CustomCharacteristic.Raining)
         .on('get', this.getRaining.bind(this));
